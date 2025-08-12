@@ -3,7 +3,15 @@ import { FormattedMessage } from "../utils/message";
 
 // --- Tipagem de sessão ---
 type Session = {
-  stage: "awaiting_name" | "category" | "service_selection" | "awaiting_address" | "awaiting_schedule" | "confirmed" | "ended";
+  stage:
+    | "awaiting_name"
+    | "category"
+    | "service_selection"
+    | "add_more_service" // novo estágio
+    | "awaiting_address"
+    | "awaiting_schedule"
+    | "confirmed"
+    | "ended";
   name?: string;
   category?: string;
   services?: string[];
@@ -89,7 +97,7 @@ const listarServicosPorCategoria = (categoria: string) => {
     case '1':
       return `💆‍♀️ *Massagens disponíveis:*  
 1. Pedras Quentes – R$ 250  
-2. Bambuterapia – R$ 180  
+2. Bam'but'erapia – R$ 180  
 3. Desportiva – R$ 100  
 4. Relaxante – R$ 150  
 5. Escalda Pés – R$ 70 
@@ -153,7 +161,6 @@ const precificarServico = (categoria: string, opcao: string): { nome: string; pr
       case '3': return { nome: 'Unhas Clássicas (mão e pé)', preco: 70 };
       case '4': return { nome: 'Manicure clássica', preco: 30 };
       case '5': return { nome: 'Pedicure clássica', preco: 40 };
-      
     }
   }
   if (categoria === '3') {
@@ -183,7 +190,7 @@ const precificarServico = (categoria: string, opcao: string): { nome: string; pr
 
 const MessageHandler = async (bot: WASocket, message: FormattedMessage) => {
   const jid = message.key.remoteJid!;
-  if (message.key.fromMe) return; // evita loop respondendo a si mesmo
+  if (message.key.fromMe) return;
 
   if (!sessions[jid]) {
     sessions[jid] = { stage: "awaiting_name" };
@@ -192,14 +199,10 @@ const MessageHandler = async (bot: WASocket, message: FormattedMessage) => {
   }
   const session = sessions[jid];
 
-
-  
-  // extrai texto com fallback para compatibilidade
   const rawText = typeof message.content === 'string' ? message.content : '';
   const textoBruto = rawText.trim();
   const texto = normalizarTexto(textoBruto);
 
-  // comandos gerais de saída/reinício
   if (texto === 'encerrar' || texto === 'sair' || texto === 'reiniciar') {
     await enqueueSend(bot, jid, {
       text: `🙏 Agradecemos o seu contato com a Bem Me Care.  
@@ -209,7 +212,6 @@ Sessão encerrada. Se quiser recomeçar, é só mandar qualquer mensagem. 💖`
     return;
   }
 
-  // etapa nome
   if (session.stage === 'awaiting_name') {
     if (!nomeValido(textoBruto)) {
       await enqueueSend(bot, jid, {
@@ -223,7 +225,6 @@ Sessão encerrada. Se quiser recomeçar, é só mandar qualquer mensagem. 💖`
     return;
   }
 
-  // etapa categoria
   if (session.stage === 'category') {
     if (['1','2','3','4','5','6','7'].includes(texto)) {
       if (texto === '7') {
@@ -241,33 +242,14 @@ Sessão encerrada. Se quiser recomeçar, é só mandar qualquer mensagem. 💖`
         await enqueueSend(bot, jid, { text: lista });
       } else {
         session.stage = 'category';
-        await enqueueSend(bot, jid, {
-          text: `Desculpa, não entendi a categoria. Escolha entre:  
-1️⃣ Massagens  
-2️⃣ Unhas  
-3️⃣ Cuidados Faciais  
-4️⃣ Maquiagem  
-5️⃣ Cílios  
-6️⃣ Sombrancelha
-7️⃣ Falar com atendente`
-        });
+        await enviarCategorias(bot, jid, session.name || '');
       }
       return;
     }
-    await enqueueSend(bot, jid, {
-      text: `Por favor, escolha uma categoria válida:  
-1️⃣ Massagens  
-2️⃣ Unhas  
-3️⃣ Cuidados Faciais  
-4️⃣ Maquiagem  
-5️⃣ Cílios  
-6️⃣ Sombrancelha
-7️⃣ Falar com atendente`
-    });
+    await enviarCategorias(bot, jid, session.name || '');
     return;
   }
 
-  // seleção de serviço
   if (session.stage === 'service_selection') {
     if (!session.category) {
       session.stage = 'category';
@@ -276,32 +258,60 @@ Sessão encerrada. Se quiser recomeçar, é só mandar qualquer mensagem. 💖`
     }
     const precoInfo = precificarServico(session.category, texto);
     if (precoInfo) {
-      session.services = [precoInfo.nome];
-      session.total = precoInfo.preco;
-      session.stage = 'awaiting_address';
+      if (!session.services) session.services = [];
+      session.services.push(precoInfo.nome);
+      session.total = (session.total || 0) + precoInfo.preco;
+
+      session.stage = 'add_more_service';
       await enqueueSend(bot, jid, {
-        text: `Perfeito, ${session.name}! Você escolheu *${precoInfo.nome}* por R$ ${precoInfo.preco}.  
-Agora me informe o endereço completo (rua, bairro, número e CEP) onde deseja o atendimento.  
-Lembrando: todos os nossos serviços são a domicílio 🚗✨`
+        text: `Você escolheu *${precoInfo.nome}* por R$ ${precoInfo.preco}.  
+Deseja adicionar mais algum serviço?  
+1️⃣ Sim  
+2️⃣ Não`
       });
       return;
     } else if (session.category === '5') {
-      session.services = [textoBruto];
-      session.total = 0;
-      session.stage = 'awaiting_address';
+      if (!session.services) session.services = [];
+      session.services.push(textoBruto);
+      session.total = session.total || 0;
+
+      session.stage = 'add_more_service';
       await enqueueSend(bot, jid, {
-        text: `Entendi, você escolheu *${textoBruto}* para cílios.  
-Agora me informe o endereço completo (rua, bairro, número e CEP) onde deseja o atendimento.`
+        text: `Você escolheu *${textoBruto}* para cílios.  
+Deseja adicionar mais algum serviço?  
+1️⃣ Sim  
+2️⃣ Não`
       });
       return;
     }
     await enqueueSend(bot, jid, {
-      text: `Não reconheci esse serviço. Por favor digite o número correto da lista ou digite "reiniciar" para começar de novo.`
+      text: `Não reconheci esse serviço. Por favor digite o número correto da lista ou "reiniciar" para começar de novo.`
     });
     return;
   }
 
-  // endereço
+  if (session.stage === 'add_more_service') {
+    if (texto === '1' || texto === 'sim') {
+      session.stage = 'category';
+      await enviarCategorias(bot, jid, session.name || '');
+      return;
+    }
+    if (texto === '2' || texto === 'nao' || texto === 'não') {
+      session.stage = 'awaiting_address';
+      await enqueueSend(bot, jid, {
+        text: `Perfeito, ${session.name}! Agora me informe o endereço completo (rua, bairro, número e CEP) onde deseja o atendimento.  
+Lembrando: todos os nossos serviços são a domicílio 🚗✨`
+      });
+      return;
+    }
+    await enqueueSend(bot, jid, {
+      text: `Responda:  
+1️⃣ Sim — para adicionar mais serviços  
+2️⃣ Não — para seguir com o agendamento`
+    });
+    return;
+  }
+
   if (session.stage === 'awaiting_address') {
     const endereco = textoBruto;
     if (endereco.length < 10) {
@@ -319,7 +329,6 @@ Agora me informe o endereço completo (rua, bairro, número e CEP) onde deseja o
     return;
   }
 
-  // confirmação de data/hora (simulada)
   if (session.stage === 'awaiting_schedule') {
     session.datetime = textoBruto;
     session.stage = 'confirmed';
@@ -351,7 +360,6 @@ Deixe sua avaliação clicando aqui 👉 [link do Google/Instagram]
     return;
   }
 
-  // pós confirmação
   if (session.stage === 'confirmed') {
     if (texto === '7') {
       session.wantsAtendente = true;
@@ -365,7 +373,6 @@ Deixe sua avaliação clicando aqui 👉 [link do Google/Instagram]
     });
     return;
   }
-
 };
 
 export default MessageHandler;
