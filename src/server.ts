@@ -4,9 +4,11 @@ import cors from "cors";
 import "./index"; // 🔥 inicia o bot
 import { getQR, getConnectionStatus } from "./index";
 
-
 import { getSocket } from "./botInstance";
 import { startSending, stopSending, getStats } from "./sender";
+
+import { ContactDB, readDB, saveDB } from "./database";
+import { readMessages, saveMessages } from "./handlers/message";
 
 const app = express();
 
@@ -14,6 +16,39 @@ app.use(cors());
 app.use(express.json());
 
 let isRunning = false;
+
+/* =========================
+   ⏰ HELPERS (NOVO)
+========================= */
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitUntilStartTime(hour: number, minute: number) {
+  const now = new Date();
+  const start = new Date();
+
+  start.setHours(hour);
+  start.setMinutes(minute);
+  start.setSeconds(0);
+  start.setMilliseconds(0);
+
+  // se já passou hoje → agenda pra amanhã
+  if (now.getTime() > start.getTime()) {
+    start.setDate(start.getDate() + 1);
+  }
+
+  const diff = start.getTime() - now.getTime();
+
+  console.log(`⏰ Aguardando até ${start.toLocaleTimeString()} para iniciar...`);
+
+  await sleep(diff);
+}
+
+/* =========================
+   🚀 CONTROLE DISPARO
+========================= */
 
 app.post("/start", async (req: Request, res: Response) => {
   if (isRunning) {
@@ -24,12 +59,23 @@ app.post("/start", async (req: Request, res: Response) => {
     const sock = getSocket();
     isRunning = true;
 
-    startSending(sock).finally(() => {
-      isRunning = false;
+    // 🔥 pode vir do front ou usa padrão 08:07
+    const { hour = 8, minute = 12 } = req.body || {};
+
+    waitUntilStartTime(hour, minute).then(() => {
+      console.log("🚀 Iniciando disparo agora...");
+
+      startSending(sock).finally(() => {
+        isRunning = false;
+      });
     });
 
-    res.json({ message: "Disparo iniciado 🚀" });
+    res.json({
+      message: `Disparo agendado para ${hour}:${minute.toString().padStart(2, "0")} ⏰`
+    });
+
   } catch (err) {
+    isRunning = false;
     res.status(500).json({ error: "Erro ao iniciar" });
   }
 });
@@ -44,7 +90,7 @@ app.post("/pause", (req: Request, res: Response) => {
 app.get("/status", (req: Request, res: Response) => {
   res.json({
     running: isRunning,
-    connected: getConnectionStatus(), // 🔥 novo
+    connected: getConnectionStatus(),
     ...getStats()
   });
 });
@@ -52,12 +98,6 @@ app.get("/status", (req: Request, res: Response) => {
 app.get("/qr", (req: Request, res: Response) => {
   res.json({ qr: getQR() });
 });
-
-app.listen(3000, () => {
-  console.log("🚀 API rodando na porta 3000");
-});
-
-import { ContactDB, readDB, saveDB } from "./database";
 
 /* =========================
    📇 CONTATOS CRUD
@@ -77,19 +117,22 @@ app.post("/contacts", (req, res) => {
   if (exists) {
     return res.status(400).json({ error: "Número já existe" });
   }
-const newContact: ContactDB = {
-  id: Date.now().toString(),
-  numero: req.body.numero,
-  mensagem: req.body.mensagem || "",
-  status: "PENDING", // ✅ agora tipado corretamente
-  attempts: 0,
-};
+
+  const newContact: ContactDB = {
+    id: Date.now().toString(),
+    numero: req.body.numero,
+    mensagem: req.body.mensagem || "",
+    status: "PENDING",
+    attempts: 0,
+  };
 
   db.push(newContact);
   saveDB(db);
 
   res.json(newContact);
 });
+
+// ✏️ ATUALIZAR
 app.put("/contacts/:id", (req, res) => {
   const db = readDB();
 
@@ -97,31 +140,17 @@ app.put("/contacts/:id", (req, res) => {
 
   if (!contact) return res.status(404).send("Não encontrado");
 
-  // ✅ atualiza tudo que vier
-  if (req.body.numero !== undefined) {
-    contact.numero = req.body.numero;
-  }
-
-  if (req.body.mensagem !== undefined) {
-    contact.mensagem = req.body.mensagem;
-  }
-
-  if (req.body.status !== undefined) {
-    contact.status = req.body.status;
-  }
-
-  if (req.body.attempts !== undefined) {
-    contact.attempts = req.body.attempts;
-  }
-
-  if (req.body.lastError !== undefined) {
-    contact.lastError = req.body.lastError;
-  }
+  if (req.body.numero !== undefined) contact.numero = req.body.numero;
+  if (req.body.mensagem !== undefined) contact.mensagem = req.body.mensagem;
+  if (req.body.status !== undefined) contact.status = req.body.status;
+  if (req.body.attempts !== undefined) contact.attempts = req.body.attempts;
+  if (req.body.lastError !== undefined) contact.lastError = req.body.lastError;
 
   saveDB(db);
 
   res.json(contact);
 });
+
 // ❌ DELETAR
 app.delete("/contacts/:id", (req, res) => {
   let db = readDB();
@@ -146,7 +175,10 @@ app.post("/contacts/reset", (req, res) => {
 
   res.json({ ok: true });
 });
-import { readMessages, saveMessages } from "./handlers/message";
+
+/* =========================
+   💬 MENSAGENS
+========================= */
 
 // GET
 app.get("/messages", (req, res) => {
@@ -184,4 +216,12 @@ app.delete("/messages/:index", (req, res) => {
   saveMessages(msgs);
 
   res.json(msgs);
+});
+
+/* =========================
+   🚀 SERVER
+========================= */
+
+app.listen(3000, () => {
+  console.log("🚀 API rodando na porta 3000");
 });
