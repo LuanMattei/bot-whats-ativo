@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 
-import "./index"; // 🔥 inicia o bot
+import "./index";
 import { getQR, getConnectionStatus } from "./index";
 
 import { getSocket } from "./botInstance";
@@ -16,9 +16,12 @@ app.use(cors());
 app.use(express.json());
 
 let isRunning = false;
-
+let isScheduled = false;
+let scheduledTimeText = "";
+let cancelSchedule = false;
+let schedulePromise: Promise<void> | null = null;
 /* =========================
-   ⏰ HELPERS (NOVO)
+   ⏰ HELPERS
 ========================= */
 
 function sleep(ms: number) {
@@ -34,20 +37,24 @@ async function waitUntilStartTime(hour: number, minute: number) {
   start.setSeconds(0);
   start.setMilliseconds(0);
 
-  // se já passou hoje → agenda pra amanhã
   if (now.getTime() > start.getTime()) {
     start.setDate(start.getDate() + 1);
   }
 
   const diff = start.getTime() - now.getTime();
 
-  console.log(`⏰ Aguardando até ${start.toLocaleTimeString()} para iniciar...`);
+  scheduledTimeText = start.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  console.log(`⏰ Agendado para ${scheduledTimeText}`);
 
   await sleep(diff);
 }
 
 /* =========================
-   🚀 CONTROLE DISPARO
+   🚀 START
 ========================= */
 
 app.post("/start", async (req: Request, res: Response) => {
@@ -55,61 +62,120 @@ app.post("/start", async (req: Request, res: Response) => {
     return res.json({ message: "Já está rodando" });
   }
 
+  if (isScheduled) {
+    return res.json({ message: "Já existe um agendamento ativo ⏰" });
+  }
+
   try {
     const sock = getSocket();
-    isRunning = true;
 
-    // 🔥 pode vir do front ou usa padrão 08:07
-    const { hour = 8, minute = 12 } = req.body || {};
+    const { hour = 20, minute = 0 } = req.body || {};
 
-    waitUntilStartTime(hour, minute).then(() => {
+    isScheduled = true;
+    cancelSchedule = false;
+
+    schedulePromise = (async () => {
+      const now = new Date();
+      const start = new Date();
+
+      start.setHours(hour);
+      start.setMinutes(minute);
+      start.setSeconds(0);
+      start.setMilliseconds(0);
+
+      if (now.getTime() > start.getTime()) {
+        start.setDate(start.getDate() + 1);
+      }
+
+      const diff = start.getTime() - now.getTime();
+
+      scheduledTimeText = start.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      console.log(`⏰ Agendado para ${scheduledTimeText}`);
+
+      await new Promise((resolve) => setTimeout(resolve, diff));
+
+      // 🔥 VERIFICA CANCELAMENTO
+      if (cancelSchedule) {
+        console.log("❌ Agendamento cancelado antes de iniciar");
+        return;
+      }
+
       console.log("🚀 Iniciando disparo agora...");
 
-      startSending(sock).finally(() => {
-        isRunning = false;
-      });
-    });
+      isScheduled = false;
+      isRunning = true;
 
-    res.json({
-      message: `Disparo agendado para ${hour}:${minute.toString().padStart(2, "0")} ⏰`
+      await startSending(sock);
+
+      isRunning = false;
+    })();
+
+    return res.json({
+      message: `Disparo agendado para ${hour}:${minute
+        .toString()
+        .padStart(2, "0")}`,
+      scheduledTime: `${hour}:${minute.toString().padStart(2, "0")}`,
     });
 
   } catch (err) {
     isRunning = false;
-    res.status(500).json({ error: "Erro ao iniciar" });
+    isScheduled = false;
+    cancelSchedule = false;
+    return res.status(500).json({ error: "Erro ao iniciar" });
   }
 });
 
+/* =========================
+   ⏸️ PAUSE
+========================= */
+
 app.post("/pause", (req: Request, res: Response) => {
   stopSending();
+
   isRunning = false;
+  isScheduled = false;
+
+  // 🔥 cancela agendamento pendente
+  cancelSchedule = true;
+
+  console.log("🛑 Execução pausada + agendamento cancelado");
 
   res.json({ message: "Pausado ⏸️" });
 });
+/* =========================
+   📊 STATUS
+========================= */
 
 app.get("/status", (req: Request, res: Response) => {
   res.json({
     running: isRunning,
+    scheduled: isScheduled,
+    scheduledTime: scheduledTimeText,
     connected: getConnectionStatus(),
-    ...getStats()
+    ...getStats(),
   });
 });
+
+/* =========================
+   QR
+========================= */
 
 app.get("/qr", (req: Request, res: Response) => {
   res.json({ qr: getQR() });
 });
 
 /* =========================
-   📇 CONTATOS CRUD
+   CONTATOS
 ========================= */
 
-// 🔎 LISTAR
 app.get("/contacts", (req, res) => {
-  const db = readDB();
-  res.json(db);
+  res.json(readDB());
 });
 
-// ➕ CRIAR
 app.post("/contacts", (req, res) => {
   const db = readDB();
 
@@ -132,37 +198,26 @@ app.post("/contacts", (req, res) => {
   res.json(newContact);
 });
 
-// ✏️ ATUALIZAR
 app.put("/contacts/:id", (req, res) => {
   const db = readDB();
 
   const contact = db.find(c => c.id === req.params.id);
-
   if (!contact) return res.status(404).send("Não encontrado");
 
-  if (req.body.numero !== undefined) contact.numero = req.body.numero;
-  if (req.body.mensagem !== undefined) contact.mensagem = req.body.mensagem;
-  if (req.body.status !== undefined) contact.status = req.body.status;
-  if (req.body.attempts !== undefined) contact.attempts = req.body.attempts;
-  if (req.body.lastError !== undefined) contact.lastError = req.body.lastError;
+  Object.assign(contact, req.body);
 
   saveDB(db);
-
   res.json(contact);
 });
 
-// ❌ DELETAR
 app.delete("/contacts/:id", (req, res) => {
   let db = readDB();
-
   db = db.filter(c => c.id !== req.params.id);
-
   saveDB(db);
 
   res.json({ ok: true });
 });
 
-// 🔁 RESETAR STATUS
 app.post("/contacts/reset", (req, res) => {
   const db = readDB();
 
@@ -177,49 +232,36 @@ app.post("/contacts/reset", (req, res) => {
 });
 
 /* =========================
-   💬 MENSAGENS
+   MESSAGES
 ========================= */
 
-// GET
 app.get("/messages", (req, res) => {
   res.json(readMessages());
 });
 
-// ADD
 app.post("/messages", (req, res) => {
   const msgs = readMessages();
-
   msgs.push(req.body.message);
-
   saveMessages(msgs);
-
   res.json(msgs);
 });
 
-// UPDATE
 app.put("/messages/:index", (req, res) => {
   const msgs = readMessages();
-
   msgs[Number(req.params.index)] = req.body.message;
-
   saveMessages(msgs);
-
   res.json(msgs);
 });
 
-// DELETE
 app.delete("/messages/:index", (req, res) => {
   const msgs = readMessages();
-
   msgs.splice(Number(req.params.index), 1);
-
   saveMessages(msgs);
-
   res.json(msgs);
 });
 
 /* =========================
-   🚀 SERVER
+   SERVER
 ========================= */
 
 app.listen(3000, () => {
