@@ -3,8 +3,19 @@ import path from "path";
 
 const filePath = path.resolve(process.cwd(), "src/data/messages.json");
 
+export type MessageItem =
+  | {
+      type: "text";
+      content: string;
+    }
+  | {
+      type: "image";
+      caption?: string;
+      image: string;
+    };
+
 // ler mensagens
-export const readMessages = (): string[] => {
+export const readMessages = (): MessageItem[] => {
   if (!fs.existsSync(filePath)) return [];
 
   const data = fs.readFileSync(filePath, "utf-8").trim();
@@ -19,6 +30,6 @@ export const readMessages = (): string[] => {
 };
 
 // salvar mensagens
-export const saveMessages = (data: string[]) => {
+export const saveMessages = (data: MessageItem[]) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };

@@ -16,7 +16,18 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [newNumber, setNewNumber] = useState("");
 
-  const [messages, setMessages] = useState<string[]>([]);
+  type Message =
+  | {
+      type: "text";
+      content: string;
+    }
+  | {
+      type: "image";
+      caption: string;
+      image: string;
+    };
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
 
   const [showMessages, setShowMessages] = useState(true);
@@ -173,18 +184,51 @@ export default function App() {
 
               return (
                 <div key={realIndex} style={styles.contactCard}>
-                  <p>{msg}</p>
+                  {msg.type === "text" ? (
+  <p>{msg.content}</p>
+) : (
+  <>
+    <img
+      src={msg.image}
+      alt=""
+      style={{ width: "100%", borderRadius: 8 }}
+    />
+    <p>{msg.caption}</p>
+  </>
+)}
                   <div>
                     <button onClick={() => {
-                      const m = prompt("Editar:", msg);
-                      if (!m) return;
-                      fetch(`${API}/messages/${realIndex}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ message: m }),
-                      }).then(fetchAll);
-                    }}>✏️</button>
 
+  const m = prompt(
+    "Editar:",
+    msg.type === "text"
+      ? msg.content
+      : msg.caption
+  );
+
+  if (!m) return;
+
+  fetch(`${API}/messages/${realIndex}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+
+    body: JSON.stringify(    
+      msg.type === "text"
+        ? {
+            ...msg,
+            content: m
+          }
+        : {
+            ...msg,
+            caption: m
+          }
+    ),
+
+  }).then(fetchAll);
+
+}}>
+  ✏️
+</button>
                     <button onClick={() =>
                       fetch(`${API}/messages/${realIndex}`, { method: "DELETE" }).then(fetchAll)
                     }>❌</button>

@@ -1,10 +1,77 @@
 [
-  "Oi! 😊\nTô organizando minha agenda dessa semana 💅\nQuer que eu reserve um horário pra você ou prefere outro dia?\nTem procedimento novo, vai dar uma olhadinha 👀\n@xbemmecare",
-  "Amiga, tô abrindo a agenda da semana 💖\nQuer garantir seu horário ou prefere ver outra data? 💅\nTem procedimento novo, vai dar uma olhadinha 😍\n@xbemmecare",
-  "Oi, linda! ✨\nMinha agenda da semana já tá aberta 💅\nQuer que eu separe um horário pra você?\nTem procedimento novo, vai dar uma olhadinha 👀\n@xbemmecare",
-  "Oi! 💕\nJá estou organizando os atendimentos da semana 💅\nPrefere agendar agora ou ver outro dia?\nTem procedimento novo, vai dar uma olhadinha 😍\n@xbemmecare",
-  "Amiga! 💅\nTô fechando os horários dessa semana\nQuer que eu reserve um pra você?\nTem procedimento novo, vai dar uma olhadinha 👀\n@xbemmecare",
-  "Oi, tudo bem? 😊\nAgenda da semana aberta por aqui 💅\nTe encaixo em algum horário ou prefere outro dia?\nTem procedimento novo, vai dar uma olhadinha 😍\n@xbemmecare",
-  "Oi! 🌸\nTô montando minha agenda da semana 💅\nQuer que eu deixe um horário reservado pra você?\nTem procedimento novo, vai dar uma olhadinha 👀\n@xbemmecare",
-  "Oi, linda! 💖\nJá tô com a agenda da semana em mãos 💅\nQuer garantir seu horário ou prefere escolher outro dia?\nTem procedimento novo, vai dar uma olhadinha 😍\n@xbemmecare"
+  {
+    "type": "image",
+    "caption": "✨ Promoção especial válida até 15/05 😍",
+    "image": "src/assets/1.png"
+  },
+  {
+    "type": "image",
+    "caption": "💖 Aproveite essa oportunidade única até 15/05",
+    "image": "src/assets/2.png"
+  },
+  {
+    "type": "image",
+    "caption": "🌸 Procedimento com condição especial até 15/05",
+    "image": "src/assets/3.png"
+  },
+  {
+    "type": "image",
+    "caption": "🔥 Últimos dias da promoção válida até 15/05",
+    "image": "src/assets/4.png"
+  },
+  {
+    "type": "image",
+    "caption": "😍 Resultado incrível com valor promocional até 15/05",
+    "image": "src/assets/1.png"
+  },
+  {
+    "type": "image",
+    "caption": "📣 Agenda aberta com desconto até 15/05",
+    "image": "src/assets/2.png"
+  },
+  {
+    "type": "image",
+    "caption": "✨ Garanta seu horário antes do dia 15/05",
+    "image": "src/assets/3.png"
+  },
+  {
+    "type": "image",
+    "caption": "💎 Condição exclusiva válida até 15/05",
+    "image": "src/assets/4.png"
+  },
+  {
+    "type": "image",
+    "caption": "🌷 Promo imperdível disponível até 15/05",
+    "image": "src/assets/1.png"
+  },
+  {
+    "type": "image",
+    "caption": "⚡ Aproveite os valores especiais até 15/05",
+    "image": "src/assets/2.png"
+  },
+  {
+    "type": "image",
+    "caption": "💕 Seu momento de se cuidar chegou 😍 válido até 15/05",
+    "image": "src/assets/3.png"
+  },
+  {
+    "type": "image",
+    "caption": "🎀 Vagas limitadas com promoção até 15/05",
+    "image": "src/assets/4.png"
+  },
+  {
+    "type": "image",
+    "caption": "🌟 Atendimento especial com desconto até 15/05",
+    "image": "src/assets/1.png"
+  },
+  {
+    "type": "image",
+    "caption": "📅 Corre que a promoção encerra em 15/05",
+    "image": "src/assets/2.png"
+  },
+  {
+    "type": "image",
+    "caption": "💫 Oferta válida somente até 15/05 😍",
+    "image": "src/assets/3.png"
+  }
 ]

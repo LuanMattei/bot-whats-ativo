@@ -3,16 +3,29 @@ import { logger } from "./logger";
 
 export type FormattedMessage = {
   key: proto.IMessageKey;
-  messageTimestamp: Number | Long | null;
-  pushName: string | null;
+  messageTimestamp: number | Long | null | undefined;
+  pushName: string | null | undefined;
   content: string | null;
 };
 
+export type MessageItem =
+  | {
+      type: "text";
+      content: string;
+    }
+  | {
+      type: "image";
+      caption?: string;
+      image: string;
+    };
+
 /**
  * @param message
- * @returns a message vindo do Baileys para algo mais amigável.
+ * @returns mensagem formatada do Baileys
  */
-export const getMessage = (message: WAMessage) => {
+export const getMessage = (
+  message: WAMessage
+): FormattedMessage | undefined => {
   try {
     return {
       key: message.key,
@@ -20,7 +33,8 @@ export const getMessage = (message: WAMessage) => {
       pushName: message.pushName,
       content:
         message.message?.conversation ||
-        message.message?.extendedTextMessage?.text,
+        message.message?.extendedTextMessage?.text ||
+        null,
     };
   } catch (error) {
     logger.error(error);

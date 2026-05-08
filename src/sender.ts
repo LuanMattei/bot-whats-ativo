@@ -1,18 +1,20 @@
 import { WASocket } from "baileys";
 import { readDB, saveDB } from "./database";
 import { smartControlDelay } from "./utils/delay";
-import { readMessages } from "./handlers/message";
-
-
+import { readMessages,MessageItem } from "./handlers/message";;
+import path from "path";
 
 let isRunning = false;
 
-const getRandomMessage = () => {
+const getRandomMessage = (): MessageItem => {
   const msgs = readMessages();
 
   if (msgs.length === 0) {
-    return "Olá! 😊";
-  }
+  return {
+    type: "text",
+    content: "Olá! 😊",
+  };
+}
 
   return msgs[Math.floor(Math.random() * msgs.length)];
 };
@@ -56,10 +58,28 @@ export const startSending = async (sock: WASocket) => {
 
       console.log(`📤 Enviando para ${contact.numero}`);
 
-      await sock.sendMessage(jid, {
-        text: getRandomMessage(),
-      });
+      const message = getRandomMessage();
 
+switch (message.type) {
+  case "text":
+    await sock.sendMessage(jid, {
+      text: message.content,
+    });
+    break;
+
+  case "image":
+
+  const imagePath = path.resolve(message.image);
+
+  await sock.sendMessage(jid, {
+    image: {
+      url: imagePath,
+    },
+    caption: message.caption || "",
+  });
+
+break;
+}
       contact.status = "SENT";
       contact.attempts++;
 
