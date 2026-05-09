@@ -108,98 +108,98 @@
     "id": "1774324336234",
     "numero": "5511992494055",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324364064",
     "numero": "5511981981389",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324384752",
     "numero": "5511966176001",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324395768",
     "numero": "5511982452009",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324407430",
     "numero": "5511965339256",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324419052",
     "numero": "5511952365287",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324432320",
     "numero": "5511998120667",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324441656",
     "numero": "5511958281740",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324451052",
     "numero": "5511994226233",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774324464106",
     "numero": "5511979690593",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1774354439370",
     "numero": "5511954887555",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 0
+    "status": "SENT",
+    "attempts": 1
   },
   {
     "id": "1775083620640",
     "numero": "5511948739843",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1775094050907",
     "numero": "5511945672536",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   },
   {
     "id": "1775094398864",
     "numero": "551198739843",
     "mensagem": "",
-    "status": "PENDING",
-    "attempts": 1
+    "status": "SENT",
+    "attempts": 2
   }
 ]
